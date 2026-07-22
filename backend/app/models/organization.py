@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Enum, TIMESTAMP
 from sqlalchemy.sql import func
 
 from app.database.database import Base
-
+from sqlalchemy.orm import relationship
 
 class Organization(Base):
     __tablename__ = "organizations"
@@ -33,4 +33,9 @@ class Organization(Base):
         TIMESTAMP,
         server_default=func.now(),
         onupdate=func.now()
+    )
+    plants = relationship(
+        "Plant",
+        back_populates="organization",
+        cascade="all, delete"
     )
