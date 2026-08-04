@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class OrganizationBase(BaseModel):
@@ -26,6 +26,8 @@ class OrganizationUpdate(BaseModel):
 
 
 class OrganizationResponse(OrganizationBase):
-    id: int
+    id: str = Field(alias="id")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = {
+        "populate_by_name": True
+    }

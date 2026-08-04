@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, status
 
-from app.database.database import get_db
-from app.schemas.organization import OrganizationCreate, OrganizationResponse
-from app.services.organization_service import OrganizationService
 from app.schemas.organization import (
     OrganizationCreate,
     OrganizationUpdate,
     OrganizationResponse,
 )
+from app.services.organization_service import OrganizationService
 
 router = APIRouter(
     prefix="/organizations",
     tags=["Organizations"]
 )
-
 
 service = OrganizationService()
 
@@ -24,39 +20,37 @@ service = OrganizationService()
     response_model=OrganizationResponse,
     status_code=status.HTTP_201_CREATED
 )
-def create_organization(
+async def create_organization(
     organization: OrganizationCreate,
-    db: Session = Depends(get_db)
 ):
-    return service.create(db, organization)
+    return await service.create(organization)
+
+
 @router.get("/", response_model=list[OrganizationResponse])
-def get_organizations(db: Session = Depends(get_db)):
-    return service.get_all(db)
+async def get_organizations():
+    return await service.get_all()
 
 
 @router.get("/{organization_id}", response_model=OrganizationResponse)
-def get_organization(
-    organization_id: int,
-    db: Session = Depends(get_db)
+async def get_organization(
+    organization_id: str,
 ):
-    return service.get_by_id(db, organization_id)
+    return await service.get_by_id(organization_id)
 
 
 @router.put(
     "/{organization_id}",
     response_model=OrganizationResponse
 )
-def update_organization(
-    organization_id: int,
+async def update_organization(
+    organization_id: str,
     organization: OrganizationUpdate,
-    db: Session = Depends(get_db)
 ):
-    return service.update(db, organization_id, organization)
+    return await service.update(organization_id, organization)
 
 
 @router.delete("/{organization_id}")
-def delete_organization(
-    organization_id: int,
-    db: Session = Depends(get_db)
+async def delete_organization(
+    organization_id: str,
 ):
-    return service.delete(db, organization_id)
+    return await service.delete(organization_id)

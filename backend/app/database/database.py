@@ -1,31 +1,32 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
-DATABASE_URL = (
-    f"mysql+pymysql://{os.getenv('DB_USER')}:"
-    f"{os.getenv('DB_PASSWORD')}@"
-    f"{os.getenv('DB_HOST')}:"
-    f"{os.getenv('DB_PORT')}/"
-    f"{os.getenv('DB_NAME')}"
-)
+MONGODB_URL = os.getenv("MONGODB_URL")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
-engine = create_engine(DATABASE_URL)
+client = AsyncIOMotorClient(MONGODB_URL)
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+db = client[DATABASE_NAME]
 
-Base = declarative_base()
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+organization_collection = db.organizations
+plant_collection = db.plants
+device_collection = db.devices
+telemetry_collection = db.telemetry
+user_collection = db.users
+
+
+async def create_indexes():
+    await user_collection.create_index(
+        "username",
+        unique=True
+    )
+
+    await user_collection.create_index(
+        "email",
+        unique=True,
+        sparse=True
+    )

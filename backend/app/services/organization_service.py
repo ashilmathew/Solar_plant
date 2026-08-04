@@ -1,11 +1,6 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.repositories.organization_repository import OrganizationRepository
-from app.schemas.organization import (
-    OrganizationCreate,
-    OrganizationUpdate,
-)
 
 
 class OrganizationService:
@@ -13,14 +8,14 @@ class OrganizationService:
     def __init__(self):
         self.repository = OrganizationRepository()
 
-    def create(self, db: Session, organization: OrganizationCreate):
-        return self.repository.create(db, organization)
+    async def create(self, organization):
+        return await self.repository.create(organization)
 
-    def get_all(self, db: Session):
-        return self.repository.get_all(db)
+    async def get_all(self):
+        return await self.repository.get_all()
 
-    def get_by_id(self, db: Session, organization_id: int):
-        organization = self.repository.get_by_id(db, organization_id)
+    async def get_by_id(self, organization_id: str):
+        organization = await self.repository.get_by_id(organization_id)
 
         if not organization:
             raise HTTPException(
@@ -30,29 +25,29 @@ class OrganizationService:
 
         return organization
 
-    def update(
-        self,
-        db: Session,
-        organization_id: int,
-        organization: OrganizationUpdate
-    ):
-        db_org = self.repository.update(db, organization_id, organization)
+    async def update(self, organization_id: str, organization):
+        updated = await self.repository.update(
+            organization_id,
+            organization
+        )
 
-        if not db_org:
+        if not updated:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found"
             )
 
-        return db_org
+        return updated
 
-    def delete(self, db: Session, organization_id: int):
-        db_org = self.repository.delete(db, organization_id)
+    async def delete(self, organization_id: str):
+        deleted = await self.repository.delete(organization_id)
 
-        if not db_org:
+        if deleted == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Organization not found"
             )
 
-        return {"message": "Organization deleted successfully"}
+        return {
+            "message": "Organization deleted successfully"
+        }

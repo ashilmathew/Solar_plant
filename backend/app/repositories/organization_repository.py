@@ -1,58 +1,54 @@
-from sqlalchemy.orm import Session
+from bson import ObjectId
 
-from app.models.organization import Organization
-from app.schemas.organization import OrganizationCreate, OrganizationUpdate
+from app.database.database import organization_collection
 
 
 class OrganizationRepository:
 
-    def create(self, db: Session, organization: OrganizationCreate):
-        db_org = Organization(**organization.model_dump())
+    async def create(self, organization):
+        organization_dict = organization.model_dump()
 
-        db.add(db_org)
-        db.commit()
-        db.refresh(db_org)
+        result = await organization_collection.insert_one(organization_dict)
 
-        return db_org
+        organization_dict["id"] = str(result.inserted_id)
 
-    def get_all(self, db: Session):
-        return db.query(Organization).all()
+        return organization_dict
 
-    def get_by_id(self, db: Session, organization_id: int):
-        return (
-            db.query(Organization)
-            .filter(Organization.id == organization_id)
-            .first()
+    async def get_all(self):
+        organizations = []
+
+        async for organization in organization_collection.find():
+            organization["id"] = str(organization["_id"])
+            del organization["_id"]
+            organizations.append(organization)
+
+        return organizations
+
+    async def get_by_id(self, organization_id: str):
+
+        organization = await organization_collection.find_one(
+            {"_id": ObjectId(organization_id)}
         )
 
-    def update(
-        self,
-        db: Session,
-        organization_id: int,
-        organization: OrganizationUpdate
-    ):
-        db_org = self.get_by_id(db, organization_id)
+        if organization:
+            organization["id"] = str(organization["_id"])
+            del organization["_id"]
 
-        if not db_org:
-            return None
+        return organization
 
-        update_data = organization.model_dump(exclude_unset=True)
+    async def update(self, organization_id: str, organization):
 
-        for key, value in update_data.items():
-            setattr(db_org, key, value)
+        await organization_collection.update_one(
+            {"_id": ObjectId(organization_id)},
+            {"$set": organization.model_dump(exclude_unset=True)}
+        )
 
-        db.commit()
-        db.refresh(db_org)
+        return await self.get_by_id(organization_id)
 
-        return db_org
+    async def delete(self, organization_id: str):
 
-    def delete(self, db: Session, organization_id: int):
-        db_org = self.get_by_id(db, organization_id)
+        result = await organization_collection.delete_one(
+            {"_id": ObjectId(organization_id)}
+        )
 
-        if not db_org:
-            return None
-
-        db.delete(db_org)
-        db.commit()
-
-        return db_org
+        return result.deleted_count
